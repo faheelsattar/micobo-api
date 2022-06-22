@@ -19,7 +19,7 @@ func employeeSanitization(emp employee) bool {
 	return emp.ID > 0 && len(emp.Name) > 0 && len(emp.Post) > 0
 }
 
-// getEmployees responds with the list of all employees as JSON.
+// GettEmployees responds with the list of all employees as JSON.
 func GetEmployees(c *gin.Context) {
 	var employees = []employee{}
 
@@ -41,6 +41,7 @@ func GetEmployees(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, employees)
 }
 
+// AddEmployees adds a new employee in the database.
 func AddEmployees(c *gin.Context) {
 	var newEmployee employee
 
@@ -52,6 +53,10 @@ func AddEmployees(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, "body is invalid")
 	}
 
-	// employees = append(employees, newEmployee)
+	_, err := utils.DB.Exec(`insert into "Employees" (id, name, post) values ($1, $2, $3)`, newEmployee.ID, newEmployee.Name, newEmployee.Post)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err)
+		return
+	}
 	c.IndentedJSON(http.StatusCreated, newEmployee)
 }

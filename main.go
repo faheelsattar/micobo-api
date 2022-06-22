@@ -14,7 +14,7 @@ func main() {
 
 	//api routes
 	router.GET("/employees", controller.GetEmployees)
-	router.POST("/employess", controller.AddEmployees)
+	router.POST("/employees", controller.AddEmployees)
 
 	//server running
 	router.Run("localhost:8080")

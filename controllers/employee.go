@@ -10,33 +10,35 @@ import (
 
 // employees data representation
 type employee struct {
-	ID   string `json:"id"`
+	ID   int    `json:"id"`
 	Name string `json:"name"`
 	Post string `json:"post"`
 }
 
 func employeeSanitization(emp employee) bool {
-	return len(emp.ID) > 0 && len(emp.Name) > 0 && len(emp.Post) > 0
+	return emp.ID > 0 && len(emp.Name) > 0 && len(emp.Post) > 0
 }
 
 // getEmployees responds with the list of all employees as JSON.
 func GetEmployees(c *gin.Context) {
-	rows, err := utils.DB.Query(`select name, post from "Employees"`)
+	var employees = []employee{}
+
+	rows, err := utils.DB.Query(`select id, name, post from "Employees"`)
 	if err != nil {
 		panic(err)
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var name string
-		var post string
+		var employeeData employee
 
-		err = rows.Scan(&name, &post)
+		err = rows.Scan(&employeeData.ID, &employeeData.Name, &employeeData.Post)
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(name, post)
+		employees = append(employees, employeeData)
+		fmt.Println(employeeData.Name, employeeData.Post)
 	}
-	c.IndentedJSON(http.StatusOK, "ad")
+	c.IndentedJSON(http.StatusOK, employees)
 }
 
 func AddEmployees(c *gin.Context) {

@@ -20,6 +20,25 @@ func employeeSanitization(emp employee) bool {
 	return emp.ID > 0 && len(emp.Name) > 0 && len(emp.Gender) > 0 && len(emp.Birthday) > 0
 }
 
+func GetEmployeeIds() ([]int, error) {
+	var employeeIds = []int{}
+
+	rows, err := utils.DB.Query(`select id from "Employees"`)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var employeeID int
+
+		err = rows.Scan(employeeID)
+		employeeIds = append(employeeIds, employeeID)
+	}
+
+	return employeeIds, err
+}
+
 // GetEmployees responds with the list of all employees as JSON.
 func GetEmployees(c *gin.Context) {
 	var employees = []employee{}

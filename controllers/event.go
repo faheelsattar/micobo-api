@@ -68,9 +68,6 @@ func GetEmployeesAttendingEvent(c *gin.Context) {
 	query := c.Request.URL.Query()
 	eventId := c.Param("event_id")
 
-	var employeesAttending []int
-	var employeesAccomodation []int
-
 	var arrayFormulation string
 
 	employeeIds, err := GetEmployeeIds()
@@ -78,17 +75,13 @@ func GetEmployeesAttendingEvent(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, err)
 		return
 	}
+
 	for i := 0; i < len(employeeIds); i++ {
 		if i+1 < len(arrayFormulation) {
 			arrayFormulation += strconv.FormatInt(int64(employeeIds[i]), 10) + ","
 		} else {
 			arrayFormulation += strconv.FormatInt(int64(employeeIds[i]), 10)
 		}
-	}
-
-	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, err)
-		return
 	}
 
 	rows, err := utils.DB.Query(`select * from "Events" where attend && '{$1}' and id = $2`, arrayFormulation, eventId)
@@ -104,13 +97,11 @@ func GetEmployeesAttendingEvent(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, err)
 		return
 	}
-	employeesAttending = eventData.Attend
-	employeesAccomodation = eventData.Accomodation
 
 	if query["accomodation"][0] == "1" {
-		employeeIds = utils.RequireAccomodation(employeesAttending, employeesAccomodation)
+		employeeIds = utils.RequireAccomodation(eventData.Attend, eventData.Accomodation)
 	} else {
-		employeeIds = utils.DontRequireAccomodation(employeesAccomodation, employeesAttending)
+		employeeIds = utils.DontRequireAccomodation(eventData.Accomodation, eventData.Attend)
 	}
 	fmt.Println(eventData.Name, eventData.Scheduled)
 

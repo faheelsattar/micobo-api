@@ -49,10 +49,12 @@ func AddEmployees(c *gin.Context) {
 
 	if err := c.BindJSON(&newEmployee); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, "body is invalid")
+		return
 	}
 
 	if !employeeSanitization(newEmployee) {
 		c.IndentedJSON(http.StatusBadRequest, "body is invalid")
+		return
 	}
 
 	_, err := utils.DB.Exec(`insert into "Employees" (id, name, gender, birthday) values ($1, $2, $3, $4)`, newEmployee.ID, newEmployee.Name, newEmployee.Gender, newEmployee.Birthday)
@@ -61,4 +63,26 @@ func AddEmployees(c *gin.Context) {
 		return
 	}
 	c.IndentedJSON(http.StatusCreated, newEmployee)
+}
+
+// UpdateEmployees update an employee in the database.
+func UpdateEmployee(c *gin.Context) {
+	var newEmployee employee
+
+	if err := c.BindJSON(&newEmployee); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, "body is invalid")
+		return
+	}
+
+	if !employeeSanitization(newEmployee) {
+		c.IndentedJSON(http.StatusBadRequest, "body is invalid")
+		return
+	}
+
+	_, err := utils.DB.Exec(`update "Employees" set name=$2, gender=$3, birthday=$4 where id=$1`, newEmployee.ID, newEmployee.Name, newEmployee.Gender, newEmployee.Birthday)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err)
+		return
+	}
+	c.IndentedJSON(http.StatusCreated, "updateD employee successfully")
 }

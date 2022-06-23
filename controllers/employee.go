@@ -68,6 +68,7 @@ func AddEmployees(c *gin.Context) {
 // UpdateEmployees update an employee in the database.
 func UpdateEmployee(c *gin.Context) {
 	var newEmployee employee
+	employeeId := c.Param("employee_id")
 
 	if err := c.BindJSON(&newEmployee); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, "body is invalid")
@@ -79,10 +80,22 @@ func UpdateEmployee(c *gin.Context) {
 		return
 	}
 
-	_, err := utils.DB.Exec(`update "Employees" set name=$2, gender=$3, birthday=$4 where id=$1`, newEmployee.ID, newEmployee.Name, newEmployee.Gender, newEmployee.Birthday)
+	_, err := utils.DB.Exec(`update "Employees" set name=$2, gender=$3, birthday=$4 where id=$1`, employeeId, newEmployee.Name, newEmployee.Gender, newEmployee.Birthday)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, err)
 		return
 	}
-	c.IndentedJSON(http.StatusCreated, "updateD employee successfully")
+	c.IndentedJSON(http.StatusCreated, "updated employee successfully")
+}
+
+// DeleteEmployees deletes an employee from the database.
+func DeleteEmployee(c *gin.Context) {
+	employeeId := c.Param("employee_id")
+
+	_, err := utils.DB.Exec(`delete from "Employees" where id=$1`, employeeId)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err)
+		return
+	}
+	c.IndentedJSON(http.StatusCreated, "deleted employee successfully")
 }

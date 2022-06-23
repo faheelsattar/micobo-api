@@ -15,7 +15,8 @@ func main() {
 	//api routes
 	router.GET("/employees", controller.GetEmployees)
 	router.POST("/employees", controller.AddEmployees)
-	router.PUT("/employees", controller.UpdateEmployee)
+	router.PUT("/employees/:employee_id", controller.UpdateEmployee)
+	router.DELETE("/employees/:employee_id", controller.DeleteEmployee)
 
 	//server running
 	router.Run("localhost:8080")

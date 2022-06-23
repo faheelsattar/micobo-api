@@ -10,20 +10,21 @@ import (
 
 // employees data representation
 type employee struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-	Post string `json:"post"`
+	ID       int    `json:"id"`
+	Name     string `json:"name"`
+	Gender   string `json:"gender"`
+	Birthday string `json:"birthday"`
 }
 
 func employeeSanitization(emp employee) bool {
-	return emp.ID > 0 && len(emp.Name) > 0 && len(emp.Post) > 0
+	return emp.ID > 0 && len(emp.Name) > 0 && len(emp.Gender) > 0 && len(emp.Birthday) > 0
 }
 
-// GettEmployees responds with the list of all employees as JSON.
+// GetEmployees responds with the list of all employees as JSON.
 func GetEmployees(c *gin.Context) {
 	var employees = []employee{}
 
-	rows, err := utils.DB.Query(`select id, name, post from "Employees"`)
+	rows, err := utils.DB.Query(`select id, name, gender, birthday from "Employees"`)
 	if err != nil {
 		panic(err)
 	}
@@ -31,12 +32,13 @@ func GetEmployees(c *gin.Context) {
 	for rows.Next() {
 		var employeeData employee
 
-		err = rows.Scan(&employeeData.ID, &employeeData.Name, &employeeData.Post)
+		err = rows.Scan(&employeeData.ID, &employeeData.Name, &employeeData.Gender, &employeeData.Birthday)
 		if err != nil {
-			panic(err)
+			c.IndentedJSON(http.StatusInternalServerError, err)
+			return
 		}
 		employees = append(employees, employeeData)
-		fmt.Println(employeeData.Name, employeeData.Post)
+		fmt.Println(employeeData.Name, employeeData.Gender)
 	}
 	c.IndentedJSON(http.StatusOK, employees)
 }
@@ -53,7 +55,7 @@ func AddEmployees(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, "body is invalid")
 	}
 
-	_, err := utils.DB.Exec(`insert into "Employees" (id, name, post) values ($1, $2, $3)`, newEmployee.ID, newEmployee.Name, newEmployee.Post)
+	_, err := utils.DB.Exec(`insert into "Employees" (id, name, gender, birthday) values ($1, $2, $3, $4)`, newEmployee.ID, newEmployee.Name, newEmployee.Gender, newEmployee.Birthday)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, err)
 		return

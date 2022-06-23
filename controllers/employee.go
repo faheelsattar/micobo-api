@@ -29,6 +29,7 @@ func GetEmployees(c *gin.Context) {
 		panic(err)
 	}
 	defer rows.Close()
+
 	for rows.Next() {
 		var employeeData employee
 
@@ -40,6 +41,7 @@ func GetEmployees(c *gin.Context) {
 		employees = append(employees, employeeData)
 		fmt.Println(employeeData.Name, employeeData.Gender)
 	}
+
 	c.IndentedJSON(http.StatusOK, employees)
 }
 

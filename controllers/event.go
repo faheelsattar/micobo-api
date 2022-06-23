@@ -110,7 +110,7 @@ func GetEmployeesAttendingEvent(c *gin.Context) {
 	if query["accomodation"][0] == "1" {
 		employeeIds = utils.RequireAccomodation(employeesAttending, employeesAccomodation)
 	} else {
-		employeeIds = utils.RequireAccomodation(employeesAccomodation, employeesAttending)
+		employeeIds = utils.DontRequireAccomodation(employeesAccomodation, employeesAttending)
 	}
 	fmt.Println(eventData.Name, eventData.Scheduled)
 

@@ -57,7 +57,6 @@ func GetEmployees(c *gin.Context) {
 			return
 		}
 		employees = append(employees, employeeData)
-		// fmt.Println(employeeData.Name, employeeData.Gender)
 	}
 
 	c.IndentedJSON(http.StatusOK, employees)
@@ -68,12 +67,12 @@ func AddEmployees(c *gin.Context) {
 	var newEmployee employee
 
 	if err := c.BindJSON(&newEmployee); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, "body 1 is invalid")
+		c.IndentedJSON(http.StatusBadRequest, "body is invalid")
 		return
 	}
 
 	if !employeeSanitization(newEmployee) {
-		c.IndentedJSON(http.StatusBadRequest, "body 2 is invalid")
+		c.IndentedJSON(http.StatusBadRequest, "body is invalid")
 		return
 	}
 
@@ -90,6 +89,12 @@ func UpdateEmployee(c *gin.Context) {
 	var newEmployee employee
 	employeeId := c.Param("employee_id")
 
+	exists := employeeExists(employeeId)
+
+	if !exists {
+		c.IndentedJSON(http.StatusBadRequest, "employee doesnt exist")
+		return
+	}
 	if err := c.BindJSON(&newEmployee); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, "body is invalid")
 		return
@@ -111,10 +116,31 @@ func UpdateEmployee(c *gin.Context) {
 // DeleteEmployees deletes an employee from the database.
 func DeleteEmployee(c *gin.Context) {
 	employeeId := c.Param("employee_id")
+
+	exists := employeeExists(employeeId)
+
+	if !exists {
+		c.IndentedJSON(http.StatusBadRequest, "employee doesnt exist")
+		return
+	}
 	_, err := utils.DB.Exec(`delete from "Employees" where id=$1`, employeeId)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, "employee id wrong")
 		return
 	}
 	c.IndentedJSON(http.StatusCreated, "deleted employee successfully")
+}
+
+func employeeExists(id string) bool {
+	i := 0
+	rows, err := utils.DB.Query(`select id from "Employees" where id=$1`, id)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		i++
+	}
+	return i == 0
 }

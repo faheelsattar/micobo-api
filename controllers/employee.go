@@ -9,14 +9,14 @@ import (
 
 // employees data representation
 type employee struct {
-	ID       int    `json:"id"`
+	ID       string `json:"id"`
 	Name     string `json:"name"`
 	Gender   string `json:"gender"`
 	Birthday string `json:"birthday"`
 }
 
 func employeeSanitization(emp employee) bool {
-	return emp.ID > 0 && len(emp.Name) > 0 && len(emp.Gender) > 0 && len(emp.Birthday) > 0
+	return len(emp.ID) > 0 && len(emp.Name) > 0 && len(emp.Gender) > 0 && len(emp.Birthday) > 0
 }
 
 func GetEmployeeIds() ([]int, error) {
@@ -60,9 +60,7 @@ func GetEmployees(c *gin.Context) {
 		// fmt.Println(employeeData.Name, employeeData.Gender)
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"data": employees,
-	})
+	c.IndentedJSON(http.StatusOK, employees)
 }
 
 // AddEmployees adds a new employee in the database.
@@ -70,12 +68,12 @@ func AddEmployees(c *gin.Context) {
 	var newEmployee employee
 
 	if err := c.BindJSON(&newEmployee); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, "body is invalid")
+		c.IndentedJSON(http.StatusBadRequest, "body 1 is invalid")
 		return
 	}
 
 	if !employeeSanitization(newEmployee) {
-		c.IndentedJSON(http.StatusBadRequest, "body is invalid")
+		c.IndentedJSON(http.StatusBadRequest, "body 2 is invalid")
 		return
 	}
 
@@ -113,10 +111,9 @@ func UpdateEmployee(c *gin.Context) {
 // DeleteEmployees deletes an employee from the database.
 func DeleteEmployee(c *gin.Context) {
 	employeeId := c.Param("employee_id")
-
 	_, err := utils.DB.Exec(`delete from "Employees" where id=$1`, employeeId)
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		c.IndentedJSON(http.StatusBadRequest, "employee id wrong")
 		return
 	}
 	c.IndentedJSON(http.StatusCreated, "deleted employee successfully")

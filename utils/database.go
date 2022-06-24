@@ -20,7 +20,6 @@ func DatabaseConnection() {
 		log.Fatalf("Error loading .env file")
 	}
 
-	// getting env variables SITE_TITLE and DB_HOST
 	host := os.Getenv("DB_HOST")
 	convertedPort, err := strconv.Atoi(os.Getenv("DB_PORT"))
 	if err != nil {

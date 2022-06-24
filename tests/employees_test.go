@@ -1,6 +1,8 @@
 package tests
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	controller "misobo/controllers"
 	"misobo/utils"
@@ -15,7 +17,6 @@ import (
 func TestGetEmloyeesHandler(t *testing.T) {
 	utils.DatabaseConnection()
 
-	expectedData := `{"data":[{"id":5,"name":"faheel sattar","gender":"male","birthday":"1998-01-01T00:00:00Z"},{"id":2,"name":"kevin","gender":"male","birthday":"1998-01-01T00:00:00Z"},{"id":3,"name":"Levin","gender":"female","birthday":"1998-01-01T00:00:00Z"}]}`
 	path := "/employees"
 
 	router := gin.Default()
@@ -27,7 +28,64 @@ func TestGetEmloyeesHandler(t *testing.T) {
 	t.Logf("status: %d", w.Code)
 	t.Logf("response: %s", w.Body.String())
 
-	fmt.Println("reponse", expectedData == w.Body.String())
-	assert.Equal(t, w.Body.String(), expectedData)
+	assert.Equal(t, http.StatusOK, w.Code)
+}
 
+func TestAddEmloyeesHandlerCorrectFormat(t *testing.T) {
+	utils.DatabaseConnection()
+
+	path := "/employees"
+
+	postBody := map[string]interface{}{
+		"id":       "6",
+		"name":     "Gustav",
+		"gender":   "male",
+		"birthday": "1992-12-11",
+	}
+
+	body, _ := json.Marshal(postBody)
+	router := gin.Default()
+	router.POST(path, controller.AddEmployees)
+	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(body))
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	t.Logf("status: %d", w.Code)
+	t.Logf("response: %s", w.Body.String())
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	//restoring the database state
+	path = "/employees/6"
+	router = gin.Default()
+	router.DELETE("/employees/:employee_id", controller.DeleteEmployee)
+	req = httptest.NewRequest(http.MethodDelete, path, nil)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	t.Logf("status: %d", w.Code)
+	t.Logf("response: %s", w.Body.String())
+	fmt.Println("reponse", w.Body.String())
+}
+
+func TestAddEmloyeesHandlerWrongFormat(t *testing.T) {
+	utils.DatabaseConnection()
+
+	path := "/employees"
+
+	postBody := map[string]interface{}{
+		"id":     "6",
+		"name":   "Gustav",
+		"gender": "male",
+	}
+
+	body, _ := json.Marshal(postBody)
+	router := gin.Default()
+	router.POST(path, controller.AddEmployees)
+	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(body))
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	t.Logf("status: %d", w.Code)
+	t.Logf("response: %s", w.Body.String())
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }

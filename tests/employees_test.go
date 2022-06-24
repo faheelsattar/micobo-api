@@ -89,3 +89,27 @@ func TestAddEmloyeesHandlerWrongFormat(t *testing.T) {
 	t.Logf("response: %s", w.Body.String())
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
+
+func TestAddEmloyeesHandlerWithEmptyBodyField(t *testing.T) {
+	utils.DatabaseConnection()
+
+	path := "/employees"
+
+	postBody := map[string]interface{}{
+		"id":       "6",
+		"name":     "Gustav",
+		"gender":   "",
+		"birthday": "1992-12-11",
+	}
+
+	body, _ := json.Marshal(postBody)
+	router := gin.Default()
+	router.POST(path, controller.AddEmployees)
+	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(body))
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	t.Logf("status: %d", w.Code)
+	t.Logf("response: %s", w.Body.String())
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}

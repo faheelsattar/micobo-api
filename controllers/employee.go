@@ -142,5 +142,5 @@ func employeeExists(id string) bool {
 	for rows.Next() {
 		i++
 	}
-	return i == 0
+	return i == 1
 }

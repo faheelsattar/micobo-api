@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq" // <------------ here
 )
 
 var DB *sql.DB

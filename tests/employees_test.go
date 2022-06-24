@@ -113,3 +113,51 @@ func TestAddEmloyeesHandlerWithEmptyBodyField(t *testing.T) {
 	t.Logf("response: %s", w.Body.String())
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
+
+func TestUpdateEmloyeesHandler(t *testing.T) {
+	utils.DatabaseConnection()
+
+	path := "/employees/:employee_id"
+
+	postBody := map[string]interface{}{
+		"id":       "2",
+		"name":     "Devin",
+		"gender":   "male",
+		"birthday": "1992-12-10",
+	}
+
+	body, _ := json.Marshal(postBody)
+	router := gin.Default()
+	router.PUT(path, controller.UpdateEmployee)
+	req := httptest.NewRequest(http.MethodPut, "/employees/2", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	t.Logf("status: %d", w.Code)
+	t.Logf("response: %s", w.Body.String())
+	assert.Equal(t, http.StatusCreated, w.Code)
+}
+
+func TestUpdateEmloyeesHandlerWithWrongEmployeeId(t *testing.T) {
+	utils.DatabaseConnection()
+
+	path := "/employees/:employee_id"
+
+	postBody := map[string]interface{}{
+		"id":       "2",
+		"name":     "Devin",
+		"gender":   "male",
+		"birthday": "1992-12-10",
+	}
+
+	body, _ := json.Marshal(postBody)
+	router := gin.Default()
+	router.PUT(path, controller.UpdateEmployee)
+	req := httptest.NewRequest(http.MethodPut, "/employees/4", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	t.Logf("status: %d", w.Code)
+	t.Logf("response: %s", w.Body.String())
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}

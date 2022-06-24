@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"misobo/utils"
 	"net/http"
 
@@ -58,10 +57,12 @@ func GetEmployees(c *gin.Context) {
 			return
 		}
 		employees = append(employees, employeeData)
-		fmt.Println(employeeData.Name, employeeData.Gender)
+		// fmt.Println(employeeData.Name, employeeData.Gender)
 	}
 
-	c.IndentedJSON(http.StatusOK, employees)
+	c.JSON(http.StatusOK, gin.H{
+		"data": employees,
+	})
 }
 
 // AddEmployees adds a new employee in the database.

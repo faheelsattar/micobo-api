@@ -13,16 +13,6 @@ func employeeSanitization(employee *entities.Employee) bool {
 	return len(employee.ID) > 0 && len(employee.Name) > 0 && len(employee.Gender) > 0 && len(employee.Birthday) > 0
 }
 
-func GetEmployeeIds() ([]int, error) {
-	var employeeIds = []int{}
-
-	repo := &psql.Repository{Db: utils.DB}
-
-	employeeIds, err := repo.FindEmployeeIds()
-
-	return employeeIds, err
-}
-
 // GetEmployees responds with the list of all employees as JSON.
 func GetEmployees(c *gin.Context) {
 	repo := &psql.Repository{Db: utils.DB}

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"misobo/psql"
 	"misobo/utils"
 	"net/http"
 	"strconv"
@@ -9,68 +10,43 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// employees data representation
-type event struct {
-	ID           int    `json:"id"`
-	Name         string `json:"name"`
-	Scheduled    string `json:"Scheduled"`
-	Attend       []int  `json:"attend"`
-	Accomodation []int  `json:"accomodation"`
-}
-
 // GetEvents responds with the list of all events as JSON.
 func GetEvents(c *gin.Context) {
-	var events = []event{}
+	repo := &psql.Repository{Db: utils.DB}
 
-	rows, err := utils.DB.Query(`select id, name, scheduled, attend, accomodation from "Events"`)
+	events, err := repo.FindEvents()
 	if err != nil {
-		panic(err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var eventData event
-
-		err = rows.Scan(&eventData.ID, &eventData.Name, &eventData.Scheduled, &eventData.Attend, &eventData.Accomodation)
-		if err != nil {
-			c.IndentedJSON(http.StatusInternalServerError, err)
-			return
-		}
-		events = append(events, eventData)
-		fmt.Println(eventData.Name, eventData.Scheduled)
+		c.IndentedJSON(http.StatusInternalServerError, err)
+		return
 	}
 	c.IndentedJSON(http.StatusOK, events)
 }
 
 // GetEvent responds with a single event as JSON.
 func GetEvent(c *gin.Context) {
+	repo := &psql.Repository{Db: utils.DB}
+
 	eventId := c.Param("event_id")
 
-	rows, err := utils.DB.Query(`select id, name, scheduled, attend, accomodation from "Events" where id = $1`, eventId)
-	if err != nil {
-		panic(err)
-	}
-	defer rows.Close()
-
-	var eventData event
-
-	err = rows.Scan(&eventData.ID, &eventData.Name, &eventData.Scheduled, &eventData.Attend, &eventData.Accomodation)
+	event, err := repo.FindSingleEvent(eventId)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, err)
 		return
 	}
-
-	fmt.Println(eventData.Name, eventData.Scheduled)
-	c.IndentedJSON(http.StatusOK, eventData)
+	c.IndentedJSON(http.StatusOK, event)
 }
 
 // GetEmployeesAttendingEvent responds with the list of all events as JSON.
 func GetEmployeesAttendingEvent(c *gin.Context) {
+	repo := &psql.Repository{Db: utils.DB}
+
 	query := c.Request.URL.Query()
 	eventId := c.Param("event_id")
 
 	var arrayFormulation string
 
-	employeeIds, err := GetEmployeeIds()
+	employeeIds, err := repo.FindEmployeeIds()
+
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, err)
 		return
@@ -84,26 +60,19 @@ func GetEmployeesAttendingEvent(c *gin.Context) {
 		}
 	}
 
-	rows, err := utils.DB.Query(`select * from "Events" where attend && '{$1}' and id = $2`, arrayFormulation, eventId)
-	if err != nil {
-		panic(err)
-	}
-	defer rows.Close()
+	event, err := repo.FindEmployeesAttendingEvent(arrayFormulation, eventId)
 
-	var eventData event
-
-	err = rows.Scan(&eventData.ID, &eventData.Name, &eventData.Scheduled, &eventData.Attend, &eventData.Accomodation)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, err)
 		return
 	}
 
 	if query["accomodation"][0] == "1" {
-		employeeIds = utils.RequireAccomodation(eventData.Attend, eventData.Accomodation)
+		employeeIds = utils.RequireAccomodation(event.Attend, event.Accomodation)
 	} else {
-		employeeIds = utils.DontRequireAccomodation(eventData.Accomodation, eventData.Attend)
+		employeeIds = utils.DontRequireAccomodation(event.Accomodation, event.Attend)
 	}
-	fmt.Println(eventData.Name, eventData.Scheduled)
+	fmt.Println(event.Name, event.Scheduled)
 
 	c.IndentedJSON(http.StatusOK, employeeIds)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"misobo/entities"
+	"misobo/utils"
 	"time"
 )
 
@@ -94,7 +95,7 @@ func (repo *Repository) CreateEmployee(employee *entities.Employee) error {
 	return err
 }
 
-// Update attaches the employee repository and update data based on id
+// Update attaches the employee repository and update data based on employeeId
 func (repo *Repository) UpdateEmployee(employee *entities.Employee, employeeId string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -110,6 +111,7 @@ func (repo *Repository) UpdateEmployee(employee *entities.Employee, employeeId s
 	return err
 }
 
+// Delete attaches the employee repository and deletes data based on employeeId
 func (repo *Repository) DeleteEmployee(employeeId string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -123,4 +125,57 @@ func (repo *Repository) DeleteEmployee(employeeId string) error {
 
 	_, err = stmt.ExecContext(ctx, employeeId)
 	return err
+}
+
+func (repo *Repository) FindEvents() ([]entities.Event, error) {
+	var events = []entities.Event{}
+
+	rows, err := repo.Db.Query(`select id, name, scheduled, attend, accomodation from "Events"`)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var event entities.Event
+
+		err = rows.Scan(&event.ID, &event.Name, &event.Scheduled, &event.Attend, &event.Accomodation)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+
+	return events, nil
+}
+
+func (repo *Repository) FindSingleEvent(eventId string) (*entities.Event, error) {
+	var event = entities.Event{}
+
+	rows, err := repo.Db.Query(`select id, name, scheduled, attend, accomodation from "Events" where id = $1`, eventId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	err = rows.Scan(&event.ID, &event.Name, &event.Scheduled, &event.Attend, &event.Accomodation)
+	if err != nil {
+		return nil, err
+	}
+	return &event, nil
+}
+
+func (repo *Repository) FindEmployeesAttendingEvent(employeeIdsString string, eventId string) (*entities.Event, error) {
+	var event = entities.Event{}
+
+	rows, err := utils.DB.Query(`select * from "Events" where attend && '{$1}' and id = $2`, employeeIdsString, eventId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	err = rows.Scan(&event.ID, &event.Name, &event.Scheduled, &event.Attend, &event.Accomodation)
+	if err != nil {
+		return nil, err
+	}
+
+	return &event, nil
 }

@@ -45,8 +45,8 @@ func (repo *Repository) FindEmployees() ([]entities.Employee, error) {
 	return employees, nil
 }
 
-func (repo *Repository) FindEmployeeIds() ([]int, error) {
-	var employeeIds = []int{}
+func (repo *Repository) FindEmployeeIds() ([]string, error) {
+	var employeeIds = []string{}
 
 	rows, err := repo.Db.Query(`select id from "Employees"`)
 	if err != nil {
@@ -55,9 +55,13 @@ func (repo *Repository) FindEmployeeIds() ([]int, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var employeeId int
+		var employeeId string
 
 		err = rows.Scan(employeeId)
+
+		if err != nil {
+			return nil, err
+		}
 		employeeIds = append(employeeIds, employeeId)
 	}
 
@@ -84,7 +88,7 @@ func (repo *Repository) CreateEmployee(employee *entities.Employee) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	query := "insert into Employees (id, name, gender, birthday) values ($1, $2, $3, $4)"
+	query := `insert into "Employees" (id, name, gender, birthday) values ($1, $2, $3, $4)`
 	stmt, err := repo.Db.PrepareContext(ctx, query)
 	if err != nil {
 		return err
@@ -100,7 +104,7 @@ func (repo *Repository) UpdateEmployee(employee *entities.Employee, employeeId s
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	query := "update Employees set name = $1, gender = $2, birthday = $3 where id = $4"
+	query := `update "Employees" set name = $1, gender = $2, birthday = $3 where id = $4`
 	stmt, err := repo.Db.PrepareContext(ctx, query)
 	if err != nil {
 		return err
@@ -116,7 +120,7 @@ func (repo *Repository) DeleteEmployee(employeeId string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	query := "delete from Employees where id = $1"
+	query := `delete from "Employees" where id = $1`
 	stmt, err := repo.Db.PrepareContext(ctx, query)
 	if err != nil {
 		return err
@@ -130,9 +134,9 @@ func (repo *Repository) DeleteEmployee(employeeId string) error {
 func (repo *Repository) FindEvents() ([]entities.Event, error) {
 	var events = []entities.Event{}
 
-	rows, err := repo.Db.Query(`select id, name, scheduled, attend, accomodation from "Events"`)
+	rows, err := repo.Db.Query(`select id, name, scheduled, array_to_string(attend, ',', '*') as attend, array_to_string(accomodation, ',', '*') as accomodation from "Events"`)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -148,34 +152,44 @@ func (repo *Repository) FindEvents() ([]entities.Event, error) {
 	return events, nil
 }
 
-func (repo *Repository) FindSingleEvent(eventId string) (*entities.Event, error) {
+func (repo *Repository) FindSingleEvent(eventId string) (entities.Event, error) {
 	var event = entities.Event{}
 
-	rows, err := repo.Db.Query(`select id, name, scheduled, attend, accomodation from "Events" where id = $1`, eventId)
+	rows, err := repo.Db.Query(`select id, name, scheduled, array_to_string(attend, ',', '*') as attend, array_to_string(accomodation, ',', '*') as accomodation from "Events" where id = $1`, eventId)
 	if err != nil {
-		return nil, err
+		return event, err
 	}
 	defer rows.Close()
-	err = rows.Scan(&event.ID, &event.Name, &event.Scheduled, &event.Attend, &event.Accomodation)
-	if err != nil {
-		return nil, err
+	for rows.Next() {
+		err = rows.Scan(&event.ID, &event.Name, &event.Scheduled, &event.Attend, &event.Accomodation)
+		if err != nil {
+			return event, err
+		}
 	}
-	return &event, nil
+	if err != nil {
+		return event, err
+	}
+	return event, nil
 }
 
-func (repo *Repository) FindEmployeesAttendingEvent(employeeIdsString string, eventId string) (*entities.Event, error) {
+func (repo *Repository) FindEmployeesAttendingEvent(employeeIdsString string, eventId string) (entities.Event, error) {
 	var event = entities.Event{}
 
-	rows, err := utils.DB.Query(`select * from "Events" where attend && '{$1}' and id = $2`, employeeIdsString, eventId)
+	rows, err := utils.DB.Query(`select id, name, scheduled, array_to_string(attend, ',', '*') as attend, array_to_string(accomodation, ',', '*') as accomodation from "Events" where attend && '{$1}' and id = $2`, employeeIdsString, eventId)
 	if err != nil {
-		return nil, err
+		return event, err
 	}
 	defer rows.Close()
 
-	err = rows.Scan(&event.ID, &event.Name, &event.Scheduled, &event.Attend, &event.Accomodation)
+	for rows.Next() {
+		err = rows.Scan(&event.ID, &event.Name, &event.Scheduled, &event.Attend, &event.Accomodation)
+		if err != nil {
+			return event, err
+		}
+	}
 	if err != nil {
-		return nil, err
+		return event, err
 	}
 
-	return &event, nil
+	return event, nil
 }

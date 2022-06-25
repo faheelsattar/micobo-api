@@ -12,8 +12,8 @@ type Repository interface {
 	DeleteEmployee(employeeId string) error
 
 	FindEvents() ([]*Event, error)
-	FindSingleEvent(eventId string) (*Event, error)
-	FindEmployeesAttendingEvent(employeeIdsString string, eventId string) (*Event, error)
+	FindSingleEvent(eventId string) (Event, error)
+	FindEmployeesAttendingEvent(employeeIdsString string, eventId string) (Event, error)
 }
 
 // Employee data representation
@@ -26,9 +26,9 @@ type Employee struct {
 
 // Event data representation
 type Event struct {
-	ID           int    `json:"id"`
+	ID           string `json:"id"`
 	Name         string `json:"name"`
 	Scheduled    string `json:"Scheduled"`
-	Attend       []int  `json:"attend"`
-	Accomodation []int  `json:"accomodation"`
+	Attend       string `json:"attend"`
+	Accomodation string `json:"accomodation"`
 }

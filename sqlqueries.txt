@@ -1,0 +1,23 @@
+Employees ==>
+
+FindEmployees = select id, name, gender, birthday from "Employees"
+
+FindEmployeeIds = select id from "Employees"
+
+CreateEmployee = insert into "Employees" (id, name, gender, birthday) values ($1, $2, $3, $4)
+
+UpdateEmployee = update "Employees" set name = $1, gender = $2, birthday = $3 where id = $4
+
+DeleteEmployee = delete from "Employees" where id = $1
+
+
+
+Events ==>
+
+FindEvents = select id, name, scheduled, array_to_string(attend, ',', '*') as attend, array_to_string(accomodation, ',', '*') as accomodation from "Events"
+
+FindSingleEvent = select id, name, scheduled, array_to_string(attend, ',', '*') as attend, array_to_string(accomodation, ',', '*') as accomodation from "Events" where id = $1
+
+FindEmployeesAttendingEvent = select id, name, scheduled, array_to_string(attend, ',', '*') as attend, array_to_string(accomodation, ',', '*') as accomodation from "Events" where attend && '{$1}' and id = $2
+
+

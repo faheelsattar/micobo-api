@@ -1,8 +1,8 @@
 package utils
 
-func RequireAccomodation(attenders []int, accomodation []int) []int {
-	var employees []int
-	hash := make(map[int]bool)
+func RequireAccomodation(attenders []string, accomodation []string) []string {
+	var employees []string
+	hash := make(map[string]bool)
 	for _, e := range attenders {
 		hash[e] = true
 	}
@@ -15,9 +15,9 @@ func RequireAccomodation(attenders []int, accomodation []int) []int {
 	return employees
 }
 
-func DontRequireAccomodation(attenders []int, accomodation []int) []int {
-	var employees []int
-	hash := make(map[int]bool)
+func DontRequireAccomodation(attenders []string, accomodation []string) []string {
+	var employees []string
+	hash := make(map[string]bool)
 	for _, e := range accomodation {
 		hash[e] = true
 	}

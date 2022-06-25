@@ -5,7 +5,7 @@ import (
 	"misobo/psql"
 	"misobo/utils"
 	"net/http"
-	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,7 +16,7 @@ func GetEvents(c *gin.Context) {
 
 	events, err := repo.FindEvents()
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		c.IndentedJSON(http.StatusNotFound, err)
 		return
 	}
 	c.IndentedJSON(http.StatusOK, events)
@@ -30,7 +30,7 @@ func GetEvent(c *gin.Context) {
 
 	event, err := repo.FindSingleEvent(eventId)
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		c.IndentedJSON(http.StatusNotFound, err)
 		return
 	}
 	c.IndentedJSON(http.StatusOK, event)
@@ -48,15 +48,15 @@ func GetEmployeesAttendingEvent(c *gin.Context) {
 	employeeIds, err := repo.FindEmployeeIds()
 
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		c.IndentedJSON(http.StatusNotFound, err)
 		return
 	}
 
 	for i := 0; i < len(employeeIds); i++ {
 		if i+1 < len(arrayFormulation) {
-			arrayFormulation += strconv.FormatInt(int64(employeeIds[i]), 10) + ","
+			arrayFormulation += employeeIds[i] + ","
 		} else {
-			arrayFormulation += strconv.FormatInt(int64(employeeIds[i]), 10)
+			arrayFormulation += employeeIds[i]
 		}
 	}
 
@@ -67,10 +67,12 @@ func GetEmployeesAttendingEvent(c *gin.Context) {
 		return
 	}
 
+	eventArray := strings.Split(event.Attend, ",")
+	accomodationArray := strings.Split(event.Accomodation, ",")
 	if query["accomodation"][0] == "1" {
-		employeeIds = utils.RequireAccomodation(event.Attend, event.Accomodation)
+		employeeIds = utils.RequireAccomodation(eventArray, accomodationArray)
 	} else {
-		employeeIds = utils.DontRequireAccomodation(event.Accomodation, event.Attend)
+		employeeIds = utils.DontRequireAccomodation(accomodationArray, eventArray)
 	}
 	fmt.Println(event.Name, event.Scheduled)
 

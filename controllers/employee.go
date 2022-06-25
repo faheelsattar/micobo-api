@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"misobo/entities"
 	"misobo/psql"
 	"misobo/utils"
@@ -19,7 +20,7 @@ func GetEmployees(c *gin.Context) {
 
 	employees, err := repo.FindEmployees()
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		c.IndentedJSON(http.StatusNotFound, err)
 		return
 	}
 	c.IndentedJSON(http.StatusCreated, employees)
@@ -56,7 +57,7 @@ func UpdateEmployee(c *gin.Context) {
 	repo := &psql.Repository{Db: utils.DB}
 
 	exists := repo.EmployeeExists(employeeId)
-
+	fmt.Println("exists!!!", exists)
 	if !exists {
 		c.IndentedJSON(http.StatusBadRequest, "employee doesnt exist")
 		return
@@ -93,7 +94,7 @@ func DeleteEmployee(c *gin.Context) {
 
 	err := repo.DeleteEmployee(employeeId)
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, "employee id wrong")
+		c.IndentedJSON(http.StatusInternalServerError, "employee id wrong")
 		return
 	}
 	c.IndentedJSON(http.StatusCreated, "deleted employee successfully")

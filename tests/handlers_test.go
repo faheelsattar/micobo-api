@@ -120,7 +120,7 @@ func TestUpdateEmloyeesHandler(t *testing.T) {
 	path := "/employees/:employee_id"
 
 	postBody := map[string]interface{}{
-		"id":       "2",
+		"id":       "1",
 		"name":     "Devin",
 		"gender":   "male",
 		"birthday": "1992-12-10",
@@ -129,7 +129,7 @@ func TestUpdateEmloyeesHandler(t *testing.T) {
 	body, _ := json.Marshal(postBody)
 	router := gin.Default()
 	router.PUT(path, controller.UpdateEmployee)
-	req := httptest.NewRequest(http.MethodPut, "/employees/2", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPut, "/employees/1", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -160,4 +160,38 @@ func TestUpdateEmloyeesHandlerWithWrongEmployeeId(t *testing.T) {
 	t.Logf("status: %d", w.Code)
 	t.Logf("response: %s", w.Body.String())
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestGetEventsHandler(t *testing.T) {
+	utils.DatabaseConnection()
+
+	path := "/events"
+
+	router := gin.Default()
+	router.GET(path, controller.GetEvents)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	t.Logf("status: %d", w.Code)
+	t.Logf("response: %s", w.Body.String())
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestGetSingleEventHandler(t *testing.T) {
+	utils.DatabaseConnection()
+
+	path := "/events/:event_id"
+
+	router := gin.Default()
+	router.GET(path, controller.GetEvent)
+	req := httptest.NewRequest(http.MethodGet, "/events/1", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	t.Logf("status: %d", w.Code)
+	t.Logf("response: %s", w.Body.String())
+
+	assert.Equal(t, http.StatusOK, w.Code)
 }

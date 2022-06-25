@@ -3,7 +3,6 @@ package psql
 import (
 	"database/sql"
 	"log"
-	"misobo/utils"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -19,10 +18,12 @@ func NewMock() (*sql.DB, sqlmock.Sqlmock) {
 	return db, mock
 }
 
-func TestFind(t *testing.T) {
-	utils.DatabaseConnection()
-
-	_, mock := NewMock()
+func TestFindEmployees(t *testing.T) {
+	db, mock := NewMock()
+	repo := &Repository{db}
+	defer func() {
+		repo.Close()
+	}()
 
 	query := `select id, name, gender, birthday from "Employees"`
 
@@ -31,7 +32,7 @@ func TestFind(t *testing.T) {
 
 	mock.ExpectQuery(query).WillReturnRows(rows)
 
-	users, err := Find()
+	users, err := repo.FindEmployees()
 	assert.NotEmpty(t, users)
 	assert.NoError(t, err)
 	assert.Len(t, users, 2)

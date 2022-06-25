@@ -1,82 +1,57 @@
 package controller
 
 import (
+	"misobo/entities"
+	"misobo/psql"
 	"misobo/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-// employees data representation
-type employee struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Gender   string `json:"gender"`
-	Birthday string `json:"birthday"`
-}
-
-func employeeSanitization(emp employee) bool {
-	return len(emp.ID) > 0 && len(emp.Name) > 0 && len(emp.Gender) > 0 && len(emp.Birthday) > 0
+func employeeSanitization(employee *entities.Employee) bool {
+	return len(employee.ID) > 0 && len(employee.Name) > 0 && len(employee.Gender) > 0 && len(employee.Birthday) > 0
 }
 
 func GetEmployeeIds() ([]int, error) {
 	var employeeIds = []int{}
 
-	rows, err := utils.DB.Query(`select id from "Employees"`)
-	if err != nil {
-		panic(err)
-	}
-	defer rows.Close()
+	repo := &psql.Repository{Db: utils.DB}
 
-	for rows.Next() {
-		var employeeID int
-
-		err = rows.Scan(employeeID)
-		employeeIds = append(employeeIds, employeeID)
-	}
+	employeeIds, err := repo.FindEmployeeIds()
 
 	return employeeIds, err
 }
 
 // GetEmployees responds with the list of all employees as JSON.
 func GetEmployees(c *gin.Context) {
-	var employees = []employee{}
+	repo := &psql.Repository{Db: utils.DB}
 
-	rows, err := utils.DB.Query(`select id, name, gender, birthday from "Employees"`)
+	employees, err := repo.FindEmployees()
 	if err != nil {
-		panic(err)
+		c.IndentedJSON(http.StatusInternalServerError, err)
+		return
 	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var employeeData employee
-
-		err = rows.Scan(&employeeData.ID, &employeeData.Name, &employeeData.Gender, &employeeData.Birthday)
-		if err != nil {
-			c.IndentedJSON(http.StatusInternalServerError, err)
-			return
-		}
-		employees = append(employees, employeeData)
-	}
-
-	c.IndentedJSON(http.StatusOK, employees)
+	c.IndentedJSON(http.StatusCreated, employees)
 }
 
 // AddEmployees adds a new employee in the database.
 func AddEmployees(c *gin.Context) {
-	var newEmployee employee
+	var newEmployee entities.Employee
 
 	if err := c.BindJSON(&newEmployee); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, "body is invalid")
 		return
 	}
 
-	if !employeeSanitization(newEmployee) {
+	if !employeeSanitization(&newEmployee) {
 		c.IndentedJSON(http.StatusBadRequest, "body is invalid")
 		return
 	}
 
-	_, err := utils.DB.Exec(`insert into "Employees" (id, name, gender, birthday) values ($1, $2, $3, $4)`, newEmployee.ID, newEmployee.Name, newEmployee.Gender, newEmployee.Birthday)
+	repo := &psql.Repository{Db: utils.DB}
+
+	err := repo.CreateEmployee(&newEmployee)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, err)
 		return
@@ -86,10 +61,11 @@ func AddEmployees(c *gin.Context) {
 
 // UpdateEmployees update an employee in the database.
 func UpdateEmployee(c *gin.Context) {
-	var newEmployee employee
+	var newEmployee entities.Employee
 	employeeId := c.Param("employee_id")
+	repo := &psql.Repository{Db: utils.DB}
 
-	exists := employeeExists(employeeId)
+	exists := repo.EmployeeExists(employeeId)
 
 	if !exists {
 		c.IndentedJSON(http.StatusBadRequest, "employee doesnt exist")
@@ -100,12 +76,12 @@ func UpdateEmployee(c *gin.Context) {
 		return
 	}
 
-	if !employeeSanitization(newEmployee) {
+	if !employeeSanitization(&newEmployee) {
 		c.IndentedJSON(http.StatusBadRequest, "body is invalid")
 		return
 	}
 
-	_, err := utils.DB.Exec(`update "Employees" set name=$2, gender=$3, birthday=$4 where id=$1`, employeeId, newEmployee.Name, newEmployee.Gender, newEmployee.Birthday)
+	err := repo.UpdateEmployee(&newEmployee, employeeId)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, err)
 		return
@@ -116,31 +92,19 @@ func UpdateEmployee(c *gin.Context) {
 // DeleteEmployees deletes an employee from the database.
 func DeleteEmployee(c *gin.Context) {
 	employeeId := c.Param("employee_id")
+	repo := &psql.Repository{Db: utils.DB}
 
-	exists := employeeExists(employeeId)
+	exists := repo.EmployeeExists(employeeId)
 
 	if !exists {
 		c.IndentedJSON(http.StatusBadRequest, "employee doesnt exist")
 		return
 	}
-	_, err := utils.DB.Exec(`delete from "Employees" where id=$1`, employeeId)
+
+	err := repo.DeleteEmployee(employeeId)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, "employee id wrong")
 		return
 	}
 	c.IndentedJSON(http.StatusCreated, "deleted employee successfully")
-}
-
-func employeeExists(id string) bool {
-	i := 0
-	rows, err := utils.DB.Query(`select id from "Employees" where id=$1`, id)
-	if err != nil {
-		panic(err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		i++
-	}
-	return i == 1
 }

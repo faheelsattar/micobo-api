@@ -1,8 +1,10 @@
 package psql
 
 import (
+	"context"
 	"database/sql"
 	"misobo/entities"
+	"time"
 )
 
 // repository represent the repository model
@@ -78,26 +80,47 @@ func (repo *Repository) EmployeeExists(employeeId string) bool {
 
 // Create attaches the employee repository and creating the data
 func (repo *Repository) CreateEmployee(employee *entities.Employee) error {
-	_, err := repo.Db.Exec(`insert into "Employees" (id, name, gender, birthday) values ($1, $2, $3, $4)`, employee.ID, employee.Name, employee.Gender, employee.Birthday)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	query := "insert into Employees (id, name, gender, birthday) values ($1, $2, $3, $4)"
+	stmt, err := repo.Db.PrepareContext(ctx, query)
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
+
+	_, err = stmt.ExecContext(ctx, employee.ID, employee.Name, employee.Gender, employee.Birthday)
 	return err
 }
 
 // Update attaches the employee repository and update data based on id
 func (repo *Repository) UpdateEmployee(employee *entities.Employee, employeeId string) error {
-	_, err := repo.Db.Exec(`update "Employees" set name=$2, gender=$3, birthday=$4 where id=$1`, employeeId, employee.Name, employee.Gender, employee.Birthday)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	query := "update Employees set name = $1, gender = $2, birthday = $3 where id = $4"
+	stmt, err := repo.Db.PrepareContext(ctx, query)
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
+
+	_, err = stmt.ExecContext(ctx, employee.Name, employee.Gender, employee.Birthday, employeeId)
 	return err
 }
 
 func (repo *Repository) DeleteEmployee(employeeId string) error {
-	_, err := repo.Db.Exec(`delete from "Employees" where id=$1`, employeeId)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	query := "delete from Employees where id = $1"
+	stmt, err := repo.Db.PrepareContext(ctx, query)
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
+
+	_, err = stmt.ExecContext(ctx, employeeId)
 	return err
 }

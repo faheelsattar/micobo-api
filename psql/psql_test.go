@@ -3,11 +3,19 @@ package psql
 import (
 	"database/sql"
 	"log"
+	"misobo/entities"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 )
+
+var employee = &entities.Employee{
+	ID:       "2",
+	Name:     "Devin",
+	Gender:   "male",
+	Birthday: "1992-12-10",
+}
 
 func NewMock() (*sql.DB, sqlmock.Sqlmock) {
 	db, mock, err := sqlmock.New()
@@ -28,12 +36,60 @@ func TestFindEmployees(t *testing.T) {
 	query := `select id, name, gender, birthday from "Employees"`
 
 	rows := sqlmock.NewRows([]string{"id", "name", "gender", "birthday"}).
-		AddRow("2", "Devin", "male", "1992-12-10").AddRow("3", "Levin", "female", "1998-01-01")
+		AddRow(employee.ID, employee.Name, employee.Gender, employee.Birthday)
 
 	mock.ExpectQuery(query).WillReturnRows(rows)
 
-	users, err := repo.FindEmployees()
-	assert.NotEmpty(t, users)
+	employee, err := repo.FindEmployees()
+	assert.NotEmpty(t, employee)
 	assert.NoError(t, err)
-	assert.Len(t, users, 2)
+	assert.Len(t, employee, 1)
+}
+
+func TestCreate(t *testing.T) {
+	db, mock := NewMock()
+	repo := &Repository{db}
+	defer func() {
+		repo.Close()
+	}()
+
+	query := "insert into Employees \\(id, name, gender, birthday\\) values \\(\\$1, \\$2, \\$3, \\$4\\)"
+
+	prep := mock.ExpectPrepare(query)
+	prep.ExpectExec().WithArgs(employee.ID, employee.Name, employee.Gender, employee.Birthday).WillReturnResult(sqlmock.NewResult(0, 1))
+
+	err := repo.CreateEmployee(employee)
+	assert.NoError(t, err)
+}
+
+func TestUpdate(t *testing.T) {
+	db, mock := NewMock()
+	repo := &Repository{db}
+	defer func() {
+		repo.Close()
+	}()
+
+	query := "update Employees set name = \\$1, gender = \\$2, birthday = \\$3 where id = \\$4"
+
+	prep := mock.ExpectPrepare(query)
+	prep.ExpectExec().WithArgs(employee.Name, employee.Gender, employee.Birthday, employee.ID).WillReturnResult(sqlmock.NewResult(0, 1))
+
+	err := repo.UpdateEmployee(employee, employee.ID)
+	assert.NoError(t, err)
+}
+
+func TestDelete(t *testing.T) {
+	db, mock := NewMock()
+	repo := &Repository{db}
+	defer func() {
+		repo.Close()
+	}()
+
+	query := "delete from Employees where id = \\$1"
+
+	prep := mock.ExpectPrepare(query)
+	prep.ExpectExec().WithArgs(employee.ID).WillReturnResult(sqlmock.NewResult(0, 1))
+
+	err := repo.DeleteEmployee(employee.ID)
+	assert.NoError(t, err)
 }
